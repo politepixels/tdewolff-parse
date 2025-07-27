@@ -1,3 +1,4 @@
+//go:build gofuzz
 // +build gofuzz
 
 package fuzz
@@ -7,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/js"
+	"github.com/mhaddon/tdewolff-parse/v2"
+	"github.com/mhaddon/tdewolff-parse/v2/js"
 )
 
 // Fuzz is a fuzz test.

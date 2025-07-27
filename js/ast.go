@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/parse/v2"
+	"github.com/mhaddon/tdewolff-parse/v2"
 )
 
 var ErrInvalidJSON = fmt.Errorf("invalid JSON")

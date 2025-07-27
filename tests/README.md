@@ -7,7 +7,7 @@ To run the tests, install `go-fuzz`:
 ```
 go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
 
-cd $GOPATH/github.com/tdewolff/parse/tests/number
+cd $GOPATH/github.com/mhaddon/tdewolff-parse/tests/number
 
 go-fuzz-build
 go-fuzz -bin fuzz-fuzz.zip

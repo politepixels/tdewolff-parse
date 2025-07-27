@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/mhaddon/tdewolff-parse/v2"
+	"github.com/mhaddon/tdewolff-parse/v2/buffer"
 )
 
 var wsBytes = []byte(" ")

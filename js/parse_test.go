@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tdewolff/parse/v2"
+	"github.com/mhaddon/tdewolff-parse/v2"
 	"github.com/tdewolff/test"
 )
 

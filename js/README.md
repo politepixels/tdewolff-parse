@@ -5,11 +5,11 @@ This package is a JS lexer (ECMAScript 2020) written in [Go][1]. It follows the 
 ## Installation
 Run the following command
 
-	go get -u github.com/tdewolff/parse/v2/js
+	go get -u github.com/mhaddon/tdewolff-parse/v2/js
 
 or add the following import and run project with `go get`
 
-	import "github.com/tdewolff/parse/v2/js"
+	import "github.com/mhaddon/tdewolff-parse/v2/js"
 
 ## Lexer
 ### Usage
@@ -41,7 +41,7 @@ package main
 import (
 	"os"
 
-	"github.com/tdewolff/parse/v2/js"
+	"github.com/mhaddon/tdewolff-parse/v2/js"
 )
 
 // Tokenize JS from stdin.
@@ -72,9 +72,9 @@ The following parses a file and returns an abstract syntax tree (AST).
 ast, err := js.NewParser(parse.NewInputString("if (state == 5) { console.log('In state five'); }"))
 ```
 
-See [ast.go](https://github.com/tdewolff/parse/blob/master/js/ast.go) for all available data structures that can represent the abstact syntax tree.
+See [ast.go](https://github.com/mhaddon/tdewolff-parse/blob/master/js/ast.go) for all available data structures that can represent the abstact syntax tree.
 
 ## License
-Released under the [MIT license](https://github.com/tdewolff/parse/blob/master/LICENSE.md).
+Released under the [MIT license](https://github.com/mhaddon/tdewolff-parse/blob/master/LICENSE.md).
 
 [1]: http://golang.org/ "Go Language"

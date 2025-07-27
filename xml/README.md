@@ -1,15 +1,15 @@
-# XML [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/tdewolff/parse/v2/xml?tab=doc)
+# XML [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/mhaddon/tdewolff-parse/v2/xml?tab=doc)
 
 This package is an XML lexer written in [Go][1]. It follows the specification at [Extensible Markup Language (XML) 1.0 (Fifth Edition)](http://www.w3.org/TR/REC-xml/). The lexer takes an io.Reader and converts it into tokens until the EOF.
 
 ## Installation
 Run the following command
 
-	go get -u github.com/tdewolff/parse/v2/xml
+	go get -u github.com/mhaddon/tdewolff-parse/v2/xml
 
 or add the following import and run project with `go get`
 
-	import "github.com/tdewolff/parse/v2/xml"
+	import "github.com/mhaddon/tdewolff-parse/v2/xml"
 
 ## Lexer
 ### Usage
@@ -63,7 +63,7 @@ package main
 import (
 	"os"
 
-	"github.com/tdewolff/parse/v2/xml"
+	"github.com/mhaddon/tdewolff-parse/v2/xml"
 )
 
 // Tokenize XML from stdin.
@@ -96,6 +96,6 @@ func main() {
 ```
 
 ## License
-Released under the [MIT license](https://github.com/tdewolff/parse/blob/master/LICENSE.md).
+Released under the [MIT license](https://github.com/mhaddon/tdewolff-parse/blob/master/LICENSE.md).
 
 [1]: http://golang.org/ "Go Language"

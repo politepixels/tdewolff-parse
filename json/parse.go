@@ -4,7 +4,7 @@ package json
 import (
 	"strconv"
 
-	"github.com/tdewolff/parse/v2"
+	"github.com/mhaddon/tdewolff-parse/v2"
 )
 
 // GrammarType determines the type of grammar
