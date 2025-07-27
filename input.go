@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"bytes"
 	"io"
 )
 
@@ -183,4 +184,19 @@ func (z *Input) Len() int {
 func (z *Input) Reset() {
 	z.start = 0
 	z.pos = 0
+}
+
+func (z *Input) Position() (line, col int) {
+	line = 1
+	col = 1
+	lastNewline := -1
+	for i, c := range z.buf[:z.pos] {
+		if c == '\n' {
+			line++
+			lastNewline = i
+		}
+	}
+
+	col = len(bytes.Runes(z.buf[lastNewline+1:z.pos])) + 1
+	return line, col
 }

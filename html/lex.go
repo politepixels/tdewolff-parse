@@ -592,3 +592,7 @@ func (l *Lexer) atCaseInsensitive(b ...byte) bool {
 	}
 	return true
 }
+
+func (l *Lexer) Position() (int, int) {
+	return l.r.Position()
+}
