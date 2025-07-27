@@ -79,6 +79,10 @@ type Lexer struct {
 	text    []byte
 	attrVal []byte
 	hasTmpl bool
+
+	tokenStart         int
+	tokenEnd           int
+	attrValStartOffset int
 }
 
 // NewLexer returns a new Lexer for a given io.Reader.
@@ -128,6 +132,8 @@ func (l *Lexer) HasTemplate() bool {
 func (l *Lexer) Next() (TokenType, []byte) {
 	l.text = nil
 	l.hasTmpl = false
+	l.attrValStartOffset = -1
+	l.tokenStart = l.r.Offset()
 	var c byte
 	if l.inTag {
 		l.attrVal = nil
@@ -138,18 +144,26 @@ func (l *Lexer) Next() (TokenType, []byte) {
 			}
 			break
 		}
+
+		l.tokenStart = l.r.Offset()
+
 		if c == 0 && l.r.Err() != nil {
+			l.tokenEnd = l.r.Offset()
 			return ErrorToken, nil
 		} else if c != '>' && (c != '/' || l.r.Peek(1) != '>') {
-			return AttributeToken, l.shiftAttribute()
+			tt, data := AttributeToken, l.shiftAttribute()
+			l.tokenEnd = l.r.Offset()
+			return tt, data
 		}
 		l.r.Skip()
 		l.inTag = false
 		if c == '/' {
 			l.r.Move(2)
+			l.tokenEnd = l.r.Offset()
 			return StartTagVoidToken, l.r.Shift()
 		}
 		l.r.Move(1)
+		l.tokenEnd = l.r.Offset()
 		return StartTagCloseToken, l.r.Shift()
 	}
 
@@ -157,6 +171,7 @@ func (l *Lexer) Next() (TokenType, []byte) {
 		if rawText := l.shiftRawText(); 0 < len(rawText) {
 			l.text = rawText
 			l.rawTag = 0
+			l.tokenEnd = l.r.Offset()
 			return TextToken, rawText
 		}
 		l.rawTag = 0
@@ -167,11 +182,13 @@ func (l *Lexer) Next() (TokenType, []byte) {
 		if 0 < len(l.tmplBegin) && l.at(l.tmplBegin...) {
 			if 0 < l.r.Pos() {
 				l.text = l.r.Shift()
+				l.tokenEnd = l.r.Offset()
 				return TextToken, l.text
 			}
 			l.r.Move(len(l.tmplBegin))
 			l.moveTemplate()
 			l.hasTmpl = true
+			l.tokenEnd = l.r.Offset()
 			return TemplateToken, l.r.Shift()
 		} else if c == '<' {
 			c = l.r.Peek(1)
@@ -182,13 +199,16 @@ func (l *Lexer) Next() (TokenType, []byte) {
 			} else if 0 < l.r.Pos() {
 				// return currently buffered texttoken so that we can return tag next iteration
 				l.text = l.r.Shift()
+				l.tokenEnd = l.r.Offset()
 				return TextToken, l.text
 			} else if isEndTag {
 				l.r.Move(2)
 				// only endtags that are not followed by > or EOF arrive here
 				if c = l.r.Peek(0); !('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z') {
+					l.tokenEnd = l.r.Offset()
 					return CommentToken, l.shiftBogusComment()
 				}
+				l.tokenEnd = l.r.Offset()
 				return EndTagToken, l.shiftEndTag()
 			} else if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' {
 				l.r.Move(1)
@@ -199,13 +219,16 @@ func (l *Lexer) Next() (TokenType, []byte) {
 				return l.readMarkup()
 			} else if c == '?' {
 				l.r.Move(1)
+				l.tokenEnd = l.r.Offset()
 				return CommentToken, l.shiftBogusComment()
 			}
 		} else if c == 0 && l.r.Err() != nil {
 			if 0 < l.r.Pos() {
 				l.text = l.r.Shift()
+				l.tokenEnd = l.r.Offset()
 				return TextToken, l.text
 			}
+			l.tokenEnd = l.r.Offset()
 			return ErrorToken, nil
 		} else {
 			l.r.Move(1)
@@ -423,6 +446,9 @@ func (l *Lexer) shiftAttribute() []byte {
 			}
 			break
 		}
+
+		l.attrValStartOffset = l.r.Offset()
+
 		attrPos := l.r.Pos()
 		delim := c
 		if delim == '"' || delim == '\'' { // attribute value single- and double-quoted state
@@ -595,4 +621,16 @@ func (l *Lexer) atCaseInsensitive(b ...byte) bool {
 
 func (l *Lexer) Position() (int, int) {
 	return l.r.Position()
+}
+
+func (l *Lexer) TokenStart() int {
+	return l.tokenStart
+}
+
+func (l *Lexer) TokenEnd() int {
+	return l.tokenEnd
+}
+
+func (l *Lexer) AttrValStart() int {
+	return l.attrValStartOffset
 }

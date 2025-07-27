@@ -200,3 +200,22 @@ func (z *Input) Position() (line, col int) {
 	col = len(bytes.Runes(z.buf[lastNewline+1:z.pos])) + 1
 	return line, col
 }
+
+func (z *Input) PositionAt(offset int) (line, col int) {
+	if offset > len(z.buf) {
+		offset = len(z.buf)
+	}
+
+	line = 1
+	col = 1
+	lastNewline := -1
+	for i, c := range z.buf[:offset] {
+		if c == '\n' {
+			line++
+			lastNewline = i
+		}
+	}
+
+	col = len(bytes.Runes(z.buf[lastNewline+1:offset])) + 1
+	return line, col
+}
