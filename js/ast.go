@@ -2429,15 +2429,27 @@ func (jsw *JSWriter) Newline() {
 
 func (ast AST) PrettyJS(w *JSWriter) {
 	for i, item := range ast.List {
-		if i != 0 {
+		if i > 0 {
 			w.Write([]byte("\n"))
+			if _, ok := item.(*Comment); !ok {
+				switch ast.List[i-1].(type) {
+				case *FuncDecl, *ClassDecl:
+					w.Write([]byte("\n"))
+				}
+			}
 		}
+
 		if p, ok := item.(PrettyPrinter); ok {
 			p.PrettyJS(w)
 		} else {
+			typeName := fmt.Sprintf("%T", item)
+			fallbackComment := fmt.Sprintf("/* PrettyJS not implemented for %s */\n", typeName)
+			w.Write([]byte(fallbackComment))
 			item.JS(w)
 		}
-		if _, ok := item.(*VarDecl); ok {
+
+		switch item.(type) {
+		case *VarDecl, *ExprStmt, *ReturnStmt, *BranchStmt, *ThrowStmt, *DebuggerStmt, *ImportStmt, *ExportStmt:
 			w.Write([]byte(";"))
 		}
 	}
@@ -2566,6 +2578,33 @@ func (n ClassDecl) PrettyJS(w *JSWriter) {
 	w.Write([]byte("}"))
 }
 
+func (n FuncDecl) PrettyJS(w *JSWriter) {
+	if n.Async {
+		w.Write([]byte("async function"))
+	} else {
+		w.Write([]byte("function"))
+	}
+
+	if n.Generator {
+		w.Write([]byte("*"))
+	}
+	if n.Name != nil {
+		w.Write([]byte(" "))
+		w.Write(n.Name.Data)
+	}
+	n.Params.JS(w)
+	w.Write([]byte(" "))
+	n.Body.PrettyJS(w)
+}
+
+func (n ExprStmt) PrettyJS(w *JSWriter) {
+	if p, ok := n.Value.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Value.JS(w)
+	}
+}
+
 func (n ClassElement) PrettyJS(w *JSWriter) {
 	if n.StaticBlock != nil {
 		w.Write([]byte("static "))
@@ -2637,6 +2676,279 @@ func (n ReturnStmt) PrettyJS(w *JSWriter) {
 		}
 	}
 	w.Write([]byte(";"))
+}
+
+func (n ImportStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n ExportStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n EmptyStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n BranchStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n ThrowStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("throw "))
+	if p, ok := n.Value.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Value.JS(w)
+	}
+}
+
+func (n DebuggerStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n VarDecl) PrettyJS(w *JSWriter) {
+	w.Write(n.TokenType.Bytes())
+	for j, item := range n.List {
+		if j != 0 {
+			w.Write([]byte(","))
+		}
+		w.Write([]byte(" "))
+
+		if item.Binding != nil {
+			item.Binding.JS(w)
+		}
+		if item.Default != nil {
+			w.Write([]byte(" = "))
+			if p, ok := item.Default.(PrettyPrinter); ok {
+				p.PrettyJS(w)
+			} else {
+				item.Default.JS(w)
+			}
+		}
+	}
+}
+
+func (n Comment) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n DirectivePrologueStmt) PrettyJS(w *JSWriter) {
+	n.JS(w)
+}
+
+func (n IfStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("if ("))
+	if p, ok := n.Cond.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Cond.JS(w)
+	}
+	w.Write([]byte(") "))
+
+	if p, ok := n.Body.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Body.JS(w)
+	}
+
+	if n.Else != nil {
+		w.Write([]byte(" else "))
+		if p, ok := n.Else.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.Else.JS(w)
+		}
+	}
+}
+
+func (n ForStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("for ("))
+	if n.Init != nil {
+		if p, ok := n.Init.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.Init.JS(w)
+		}
+	}
+	w.Write([]byte("; "))
+	if n.Cond != nil {
+		if p, ok := n.Cond.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.Cond.JS(w)
+		}
+	}
+	w.Write([]byte("; "))
+	if n.Post != nil {
+		if p, ok := n.Post.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.Post.JS(w)
+		}
+	}
+	w.Write([]byte(") "))
+	n.Body.PrettyJS(w)
+}
+
+func (n ForInStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("for ("))
+	if p, ok := n.Init.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Init.JS(w)
+	}
+	w.Write([]byte(" in "))
+	if p, ok := n.Value.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Value.JS(w)
+	}
+	w.Write([]byte(") "))
+	n.Body.PrettyJS(w)
+}
+
+func (n ForOfStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("for"))
+	if n.Await {
+		w.Write([]byte(" await"))
+	}
+	w.Write([]byte(" ("))
+	if p, ok := n.Init.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Init.JS(w)
+	}
+	w.Write([]byte(" of "))
+	if p, ok := n.Value.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Value.JS(w)
+	}
+	w.Write([]byte(") "))
+	n.Body.PrettyJS(w)
+}
+
+func (n WhileStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("while ("))
+	if p, ok := n.Cond.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Cond.JS(w)
+	}
+	w.Write([]byte(") "))
+
+	if p, ok := n.Body.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Body.JS(w)
+	}
+}
+
+func (n DoWhileStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("do "))
+	if p, ok := n.Body.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Body.JS(w)
+	}
+	w.Write([]byte(" while ("))
+
+	if p, ok := n.Cond.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Cond.JS(w)
+	}
+	w.Write([]byte(")"))
+}
+
+func (n SwitchStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("switch ("))
+	if p, ok := n.Init.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Init.JS(w)
+	}
+	w.Write([]byte(") {"))
+
+	if len(n.List) > 0 {
+		wi := w.Indent()
+		for _, clause := range n.List {
+			wi.Newline()
+			if clause.Cond != nil {
+				wi.Write([]byte("case "))
+				if p, ok := clause.Cond.(PrettyPrinter); ok {
+					p.PrettyJS(wi)
+				} else {
+					clause.Cond.JS(wi)
+				}
+			} else {
+				wi.Write([]byte("default"))
+			}
+			wi.Write([]byte(":"))
+
+			if len(clause.List) > 0 {
+				wii := wi.Indent()
+				for _, item := range clause.List {
+					wii.Newline()
+					if p, ok := item.(PrettyPrinter); ok {
+						p.PrettyJS(wii)
+					} else {
+						item.JS(wii)
+					}
+				}
+			}
+		}
+	}
+	w.Newline()
+	w.Write([]byte("}"))
+}
+
+func (n TryStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("try "))
+	n.Body.PrettyJS(w)
+
+	if n.Catch != nil {
+		w.Write([]byte(" catch"))
+		if n.Binding != nil {
+			w.Write([]byte("("))
+			n.Binding.JS(w)
+			w.Write([]byte(")"))
+		}
+		w.Write([]byte(" "))
+		n.Catch.PrettyJS(w)
+	}
+
+	if n.Finally != nil {
+		w.Write([]byte(" finally "))
+		n.Finally.PrettyJS(w)
+	}
+}
+
+func (n WithStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("with ("))
+	if p, ok := n.Cond.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Cond.JS(w)
+	}
+	w.Write([]byte(") "))
+
+	if p, ok := n.Body.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Body.JS(w)
+	}
+}
+
+func (n LabelledStmt) PrettyJS(w *JSWriter) {
+	w.Write(n.Label)
+	w.Write([]byte(": "))
+	if p, ok := n.Value.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Value.JS(w)
+	}
 }
 
 func (v *Var) exprNode()           {}
