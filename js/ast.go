@@ -2377,6 +2377,172 @@ func (n CommaExpr) JS(w io.Writer) {
 	}
 }
 
+type CommentedExpr struct {
+	Comment []byte
+	Expr    IExpr
+}
+
+func (n CommentedExpr) String() string {
+	return string(n.Comment) + " " + n.Expr.String()
+}
+
+func (n CommentedExpr) JS(w io.Writer) {
+	if wi, ok := w.(parse.Indenter); ok {
+		w = wi.Writer
+	}
+	w.Write(n.Comment)
+	w.Write([]byte(" "))
+	n.Expr.JS(w)
+}
+
+type PrettyPrinter interface {
+	PrettyJS(w *JSWriter)
+}
+
+type JSWriter struct {
+	w      io.Writer
+	indent []byte
+}
+
+func NewJSWriter(w io.Writer) *JSWriter {
+	return &JSWriter{w: w}
+}
+
+func (jsw *JSWriter) Write(p []byte) (int, error) {
+	return jsw.w.Write(p)
+}
+
+func (jsw *JSWriter) Indent() *JSWriter {
+	newIndent := make([]byte, len(jsw.indent)+4)
+	copy(newIndent, jsw.indent)
+	copy(newIndent[len(jsw.indent):], []byte("    "))
+	return &JSWriter{
+		w:      jsw.w,
+		indent: newIndent,
+	}
+}
+
+func (jsw *JSWriter) Newline() {
+	jsw.w.Write([]byte("\n"))
+	jsw.w.Write(jsw.indent)
+}
+
+func (ast AST) PrettyJS(w *JSWriter) {
+	for i, item := range ast.List {
+		if i != 0 {
+			w.Write([]byte("\n"))
+		}
+		if p, ok := item.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			item.JS(w)
+		}
+		if _, ok := item.(*VarDecl); ok {
+			w.Write([]byte(";"))
+		}
+	}
+}
+
+func (n CallExpr) PrettyJS(w *JSWriter) {
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+
+	if n.Optional {
+		w.Write([]byte("?.("))
+	} else {
+		w.Write([]byte("("))
+	}
+
+	if len(n.Args.List) > 2 {
+		wi := w.Indent()
+		for _, arg := range n.Args.List {
+			wi.Newline()
+			if p, ok := arg.Value.(PrettyPrinter); ok {
+				p.PrettyJS(wi)
+			} else {
+				arg.Value.JS(wi)
+			}
+			w.Write([]byte(","))
+		}
+		w.Newline()
+	} else {
+		n.Args.JS(w)
+	}
+	w.Write([]byte(")"))
+}
+
+func (n ArrayExpr) PrettyJS(w *JSWriter) {
+	w.Write([]byte("["))
+	if len(n.List) > 0 {
+		wi := w.Indent()
+		for i, item := range n.List {
+			wi.Newline()
+			if p, ok := item.Value.(PrettyPrinter); ok {
+				p.PrettyJS(wi)
+			} else {
+				item.JS(wi)
+			}
+			if i < len(n.List)-1 {
+				w.Write([]byte(","))
+			}
+		}
+		w.Newline()
+	}
+	w.Write([]byte("]"))
+}
+
+func (n ObjectExpr) PrettyJS(w *JSWriter) {
+	w.Write([]byte("{"))
+	if len(n.List) > 0 {
+		wi := w.Indent()
+		for i, item := range n.List {
+			wi.Newline()
+			item.JS(wi)
+			if i < len(n.List)-1 {
+				w.Write([]byte(","))
+			}
+		}
+		w.Newline()
+	}
+	w.Write([]byte("}"))
+}
+
+func (n CommentedExpr) PrettyJS(w *JSWriter) {
+	w.Write(n.Comment)
+	w.Write([]byte(" "))
+	if p, ok := n.Expr.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Expr.JS(w)
+	}
+}
+
+func (n BlockStmt) PrettyJS(w *JSWriter) {
+	if len(n.List) == 0 {
+		w.Write([]byte("{}"))
+		return
+	}
+
+	w.Write([]byte("{"))
+	wi := w.Indent()
+	for _, item := range n.List {
+		wi.Newline()
+		if p, ok := item.(PrettyPrinter); ok {
+			p.PrettyJS(wi)
+		} else {
+			item.JS(wi)
+		}
+		if _, ok := item.(*VarDecl); ok {
+			w.Write([]byte(";"))
+		}
+	}
+	w.Newline()
+	w.Write([]byte("}"))
+}
+
 func (v *Var) exprNode()           {}
 func (n LiteralExpr) exprNode()    {}
 func (n ArrayExpr) exprNode()      {}
@@ -2395,3 +2561,4 @@ func (n CondExpr) exprNode()       {}
 func (n YieldExpr) exprNode()      {}
 func (n ArrowFunc) exprNode()      {}
 func (n CommaExpr) exprNode()      {}
+func (n CommentedExpr) exprNode()  {}
