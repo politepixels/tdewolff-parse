@@ -2377,3 +2377,23 @@ func (p *Parser) exprToBinding(expr IExpr) (binding IBinding) {
 func (p *Parser) isIdentifierReference(tt TokenType) bool {
 	return IsIdentifier(tt) || !p.yield && tt == YieldToken || !p.await && tt == AwaitToken
 }
+
+type CommentedExpr struct {
+	Comment []byte
+	Expr    IExpr
+}
+
+func (n CommentedExpr) String() string {
+	return string(n.Comment) + " " + n.Expr.String()
+}
+
+func (n CommentedExpr) JS(w io.Writer) {
+	if wi, ok := w.(parse.Indenter); ok {
+		w = wi.Writer
+	}
+	w.Write(n.Comment)
+	w.Write([]byte(" "))
+	n.Expr.JS(w)
+}
+
+func (n CommentedExpr) exprNode() {}
