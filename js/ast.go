@@ -2543,6 +2543,102 @@ func (n BlockStmt) PrettyJS(w *JSWriter) {
 	w.Write([]byte("}"))
 }
 
+func (n ClassDecl) PrettyJS(w *JSWriter) {
+	w.Write([]byte("class"))
+	if n.Name != nil {
+		w.Write([]byte(" "))
+		w.Write(n.Name.Data)
+	}
+	if n.Extends != nil {
+		w.Write([]byte(" extends "))
+		n.Extends.JS(w)
+	}
+	w.Write([]byte(" {"))
+
+	if len(n.List) > 0 {
+		wi := w.Indent()
+		for _, item := range n.List {
+			wi.Newline()
+			item.PrettyJS(wi)
+		}
+		w.Newline()
+	}
+	w.Write([]byte("}"))
+}
+
+func (n ClassElement) PrettyJS(w *JSWriter) {
+	if n.StaticBlock != nil {
+		w.Write([]byte("static "))
+		n.StaticBlock.PrettyJS(w)
+		return
+	}
+
+	if n.Method != nil {
+		n.Method.PrettyJS(w)
+		return
+	}
+
+	n.Field.JS(w)
+	w.Write([]byte(";"))
+}
+
+func (n MethodDecl) PrettyJS(w *JSWriter) {
+	writen := false
+	if n.Static {
+		w.Write([]byte("static"))
+		writen = true
+	}
+	if n.Async {
+		if writen {
+			w.Write([]byte(" "))
+		}
+		w.Write([]byte("async"))
+		writen = true
+	}
+	if n.Generator {
+		if writen {
+			w.Write([]byte(" "))
+		}
+		w.Write([]byte("*"))
+		writen = true
+	}
+	if n.Get {
+		if writen {
+			w.Write([]byte(" "))
+		}
+		w.Write([]byte("get"))
+		writen = true
+	}
+	if n.Set {
+		if writen {
+			w.Write([]byte(" "))
+		}
+		w.Write([]byte("set"))
+		writen = true
+	}
+	if writen {
+		w.Write([]byte(" "))
+	}
+	n.Name.JS(w)
+	n.Params.JS(w)
+	w.Write([]byte(" "))
+
+	n.Body.PrettyJS(w)
+}
+
+func (n ReturnStmt) PrettyJS(w *JSWriter) {
+	w.Write([]byte("return"))
+	if n.Value != nil {
+		w.Write([]byte(" "))
+		if p, ok := n.Value.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.Value.JS(w)
+		}
+	}
+	w.Write([]byte(";"))
+}
+
 func (v *Var) exprNode()           {}
 func (n LiteralExpr) exprNode()    {}
 func (n ArrayExpr) exprNode()      {}
