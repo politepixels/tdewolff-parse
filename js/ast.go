@@ -2978,6 +2978,121 @@ func (n LabelledStmt) PrettyJS(w *JSWriter) {
 	}
 }
 
+func (n GroupExpr) PrettyJS(w *JSWriter) {
+	w.Write([]byte("("))
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+	w.Write([]byte(")"))
+}
+
+func (n ArrowFunc) PrettyJS(w *JSWriter) {
+	if n.Async {
+		w.Write([]byte("async "))
+	}
+	n.Params.JS(w)
+	w.Write([]byte(" => "))
+	n.Body.PrettyJS(w)
+}
+
+func (n BinaryExpr) PrettyJS(w *JSWriter) {
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+
+	w.Write([]byte(" "))
+	w.Write(n.Op.Bytes())
+	w.Write([]byte(" "))
+
+	if p, ok := n.Y.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Y.JS(w)
+	}
+}
+
+func (n UnaryExpr) PrettyJS(w *JSWriter) {
+	if n.Op == PostIncrToken || n.Op == PostDecrToken {
+		if p, ok := n.X.(PrettyPrinter); ok {
+			p.PrettyJS(w)
+		} else {
+			n.X.JS(w)
+		}
+		w.Write(n.Op.Bytes())
+		return
+	}
+
+	w.Write(n.Op.Bytes())
+	if IsIdentifierName(n.Op) {
+		w.Write([]byte(" "))
+	}
+
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+}
+
+func (n CondExpr) PrettyJS(w *JSWriter) {
+	if p, ok := n.Cond.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Cond.JS(w)
+	}
+
+	w.Write([]byte(" ? "))
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+
+	w.Write([]byte(" : "))
+	if p, ok := n.Y.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Y.JS(w)
+	}
+}
+
+func (n DotExpr) PrettyJS(w *JSWriter) {
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+	if n.Optional {
+		w.Write([]byte("?."))
+	} else {
+		w.Write([]byte("."))
+	}
+	n.Y.JS(w)
+}
+
+func (n IndexExpr) PrettyJS(w *JSWriter) {
+	if p, ok := n.X.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.X.JS(w)
+	}
+	if n.Optional {
+		w.Write([]byte("?.["))
+	} else {
+		w.Write([]byte("["))
+	}
+	if p, ok := n.Y.(PrettyPrinter); ok {
+		p.PrettyJS(w)
+	} else {
+		n.Y.JS(w)
+	}
+	w.Write([]byte("]"))
+}
+
 func (v *Var) exprNode()           {}
 func (n LiteralExpr) exprNode()    {}
 func (n ArrayExpr) exprNode()      {}
