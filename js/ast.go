@@ -2427,6 +2427,10 @@ func (jsw *JSWriter) Newline() {
 	jsw.w.Write(jsw.indent)
 }
 
+func (jsw *JSWriter) WriteIndent() {
+	jsw.w.Write(jsw.indent)
+}
+
 func (ast AST) PrettyJS(w *JSWriter) {
 	for i, item := range ast.List {
 		if i > 0 {
@@ -2461,28 +2465,50 @@ func (n CallExpr) PrettyJS(w *JSWriter) {
 	} else {
 		n.X.JS(w)
 	}
+	w.Write([]byte("("))
 
-	if n.Optional {
-		w.Write([]byte("?.("))
-	} else {
-		w.Write([]byte("("))
+	firstComplexArgIndex := -1
+	for i, arg := range n.Args.List {
+		switch arg.Value.(type) {
+		case *CallExpr, *ArrayExpr, *CommentedExpr, *ArrowFunc:
+			firstComplexArgIndex = i
+			break
+		}
+		if firstComplexArgIndex != -1 {
+			break
+		}
 	}
 
-	if len(n.Args.List) > 2 {
+	if firstComplexArgIndex == -1 {
+		for i, arg := range n.Args.List {
+			if i > 0 {
+				w.Write([]byte(", "))
+			}
+			arg.JS(w)
+		}
+	} else {
+		for i := 0; i < firstComplexArgIndex; i++ {
+			if i > 0 {
+				w.Write([]byte(", "))
+			}
+			n.Args.List[i].JS(w)
+		}
+
 		wi := w.Indent()
-		for _, arg := range n.Args.List {
+		for i := firstComplexArgIndex; i < len(n.Args.List); i++ {
+			if i > 0 {
+				w.Write([]byte(","))
+			}
 			wi.Newline()
-			if p, ok := arg.Value.(PrettyPrinter); ok {
+			if p, ok := n.Args.List[i].Value.(PrettyPrinter); ok {
 				p.PrettyJS(wi)
 			} else {
-				arg.Value.JS(wi)
+				n.Args.List[i].Value.JS(wi)
 			}
-			w.Write([]byte(","))
 		}
 		w.Newline()
-	} else {
-		n.Args.JS(w)
 	}
+
 	w.Write([]byte(")"))
 }
 
@@ -2495,7 +2521,12 @@ func (n ArrayExpr) PrettyJS(w *JSWriter) {
 			if p, ok := item.Value.(PrettyPrinter); ok {
 				p.PrettyJS(wi)
 			} else {
-				item.JS(wi)
+				if item.Spread {
+					w.Write([]byte("..."))
+				}
+				if item.Value != nil {
+					item.Value.JS(wi)
+				}
 			}
 			if i < len(n.List)-1 {
 				w.Write([]byte(","))
@@ -2546,9 +2577,6 @@ func (n BlockStmt) PrettyJS(w *JSWriter) {
 			p.PrettyJS(wi)
 		} else {
 			item.JS(wi)
-		}
-		if _, ok := item.(*VarDecl); ok {
-			w.Write([]byte(";"))
 		}
 	}
 	w.Newline()
@@ -2666,9 +2694,8 @@ func (n MethodDecl) PrettyJS(w *JSWriter) {
 }
 
 func (n ReturnStmt) PrettyJS(w *JSWriter) {
-	w.Write([]byte("return"))
+	w.Write([]byte("return "))
 	if n.Value != nil {
-		w.Write([]byte(" "))
 		if p, ok := n.Value.(PrettyPrinter); ok {
 			p.PrettyJS(w)
 		} else {
