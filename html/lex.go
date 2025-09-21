@@ -83,8 +83,11 @@ type Lexer struct {
 	attrVal []byte
 	hasTmpl bool
 
-	tokenStart         int
-	tokenEnd           int
+	tokenStart int
+	tokenEnd   int
+	tokenLine  int
+	tokenCol   int
+
 	attrValStartOffset int
 }
 
@@ -136,7 +139,10 @@ func (l *Lexer) Next() (TokenType, []byte) {
 	l.text = nil
 	l.hasTmpl = false
 	l.attrValStartOffset = -1
+
 	l.tokenStart = l.r.Offset()
+	l.tokenLine, l.tokenCol = l.r.Position()
+
 	var c byte
 	if l.inTag {
 		l.attrVal = nil
@@ -149,6 +155,7 @@ func (l *Lexer) Next() (TokenType, []byte) {
 		}
 
 		l.tokenStart = l.r.Offset()
+		l.tokenLine, l.tokenCol = l.r.Position()
 
 		if c == 0 && l.r.Err() != nil {
 			l.tokenEnd = l.r.Offset()
@@ -624,18 +631,32 @@ func (l *Lexer) atCaseInsensitive(b ...byte) bool {
 	return true
 }
 
+// Position returns the line and column of the current token.
 func (l *Lexer) Position() (int, int) {
-	return l.r.Position()
+	return l.r.PositionAt(l.tokenStart)
 }
 
+// TokenStart returns the byte offset of the current token.
 func (l *Lexer) TokenStart() int {
 	return l.tokenStart
 }
 
+// TokenEnd returns the byte offset of the end of the current token.
 func (l *Lexer) TokenEnd() int {
 	return l.tokenEnd
 }
 
+// TokenLine returns the line number (1-based) of the current token.
+func (l *Lexer) TokenLine() int {
+	return l.tokenLine
+}
+
+// TokenCol returns the column number (1-based) of the current token.
+func (l *Lexer) TokenCol() int {
+	return l.tokenCol
+}
+
+// AttrValStart returns the byte offset of the attribute value, or -1 if not applicable.
 func (l *Lexer) AttrValStart() int {
 	return l.attrValStartOffset
 }

@@ -3,6 +3,7 @@ package parse
 import (
 	"bytes"
 	"io"
+	"unicode/utf8"
 )
 
 var nullBuffer = []byte{0}
@@ -16,6 +17,10 @@ type Input struct {
 	err   error
 
 	restore func()
+
+	line        int // current line number (1-based)
+	col         int // current column number (1-based, in runes)
+	lastNewline int // byte offset of the last newline character
 }
 
 // NewInput returns a new Input for a given io.Input and uses io.ReadAll to read it into a byte slice.
@@ -32,8 +37,10 @@ func NewInput(r io.Reader) *Input {
 			b, err = io.ReadAll(r)
 			if err != nil {
 				return &Input{
-					buf: nullBuffer,
-					err: err,
+					buf:  nullBuffer,
+					err:  err,
+					line: 1,
+					col:  1,
 				}
 			}
 		}
@@ -50,7 +57,10 @@ func NewInputString(s string) *Input {
 // To avoid reallocation, make sure the capacity has room for one more byte.
 func NewInputBytes(b []byte) *Input {
 	z := &Input{
-		buf: b,
+		buf:         b,
+		line:        1,
+		col:         1,
+		lastNewline: -1,
 	}
 
 	n := len(b)
@@ -119,23 +129,33 @@ func (z *Input) PeekRune(pos int) (rune, int) {
 	return rune(c&0x07)<<18 | rune(z.Peek(pos+1)&0x3F)<<12 | rune(z.Peek(pos+2)&0x3F)<<6 | rune(z.Peek(pos+3)&0x3F), 4
 }
 
-// Move advances the position.
+// Move advances the position and updates the line and column counters.
 func (z *Input) Move(n int) {
-	z.pos += n
+	if n <= 0 {
+		return
+	}
+	end := z.pos + n
+	if end > len(z.buf)-1 {
+		end = len(z.buf) - 1
+	}
+
+	// Scan only the moved segment for newlines and runes.
+	movedBytes := z.buf[z.pos:end]
+	newlines := bytes.Count(movedBytes, []byte{'\n'})
+	if newlines > 0 {
+		z.line += newlines
+		z.lastNewline = z.pos + bytes.LastIndexByte(movedBytes, '\n')
+		z.col = utf8.RuneCount(z.buf[z.lastNewline+1:end]) + 1
+	} else {
+		z.col += utf8.RuneCount(movedBytes)
+	}
+	z.pos = end
 }
 
 // MoveRune advances the position by the length of the current rune.
 func (z *Input) MoveRune() {
-	c := z.Peek(0)
-	if c < 0xC0 || len(z.buf)-1-z.pos < 2 {
-		z.pos++
-	} else if c < 0xE0 || len(z.buf)-1-z.pos < 3 {
-		z.pos += 2
-	} else if c < 0xF0 || len(z.buf)-1-z.pos < 4 {
-		z.pos += 3
-	} else {
-		z.pos += 4
-	}
+	_, n := z.PeekRune(0)
+	z.Move(n)
 }
 
 // Pos returns a mark to which can be rewinded.
@@ -184,38 +204,26 @@ func (z *Input) Len() int {
 func (z *Input) Reset() {
 	z.start = 0
 	z.pos = 0
+	z.line = 1
+	z.col = 1
+	z.lastNewline = -1
 }
 
+// Position returns the current line and column number.
 func (z *Input) Position() (line, col int) {
-	line = 1
-	col = 1
-	lastNewline := -1
-	for i, c := range z.buf[:z.pos] {
-		if c == '\n' {
-			line++
-			lastNewline = i
-		}
-	}
-
-	col = len(bytes.Runes(z.buf[lastNewline+1:z.pos])) + 1
-	return line, col
+	return z.line, z.col
 }
 
+// PositionAt returns the line and column number for an arbitrary offset.
 func (z *Input) PositionAt(offset int) (line, col int) {
 	if offset > len(z.buf) {
 		offset = len(z.buf)
 	}
 
-	line = 1
-	col = 1
-	lastNewline := -1
-	for i, c := range z.buf[:offset] {
-		if c == '\n' {
-			line++
-			lastNewline = i
-		}
-	}
+	lastNewline := bytes.LastIndexByte(z.buf[:offset], '\n')
 
-	col = len(bytes.Runes(z.buf[lastNewline+1:offset])) + 1
+	line = bytes.Count(z.buf[:lastNewline+1], []byte{'\n'}) + 1
+
+	col = utf8.RuneCount(z.buf[lastNewline+1:offset]) + 1
 	return line, col
 }
