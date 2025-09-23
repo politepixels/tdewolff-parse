@@ -131,25 +131,43 @@ func (z *Input) PeekRune(pos int) (rune, int) {
 
 // Move advances the position and updates the line and column counters.
 func (z *Input) Move(n int) {
-	if n <= 0 {
+	if n == 0 {
 		return
 	}
 	end := z.pos + n
-	if end > len(z.buf)-1 {
+	if end < 0 {
+		end = 0
+	} else if end > len(z.buf)-1 {
 		end = len(z.buf) - 1
 	}
 
-	// Scan only the moved segment for newlines and runes.
-	movedBytes := z.buf[z.pos:end]
-	newlines := bytes.Count(movedBytes, []byte{'\n'})
-	if newlines > 0 {
-		z.line += newlines
-		z.lastNewline = z.pos + bytes.LastIndexByte(movedBytes, '\n')
-		z.col = utf8.RuneCount(z.buf[z.lastNewline+1:end]) + 1
-	} else {
-		z.col += utf8.RuneCount(movedBytes)
+	if n > 0 {
+		// Scan only the moved segment for newlines and runes.
+		movedBytes := z.buf[z.pos:end]
+		newlines := bytes.Count(movedBytes, []byte{'\n'})
+		if newlines > 0 {
+			z.line += newlines
+			z.lastNewline = z.pos + bytes.LastIndexByte(movedBytes, '\n')
+			z.col = utf8.RuneCount(z.buf[z.lastNewline+1:end]) + 1
+		} else {
+			z.col += utf8.RuneCount(movedBytes)
+		}
+		z.pos = end
+		return
 	}
+
+	// n < 0, recompute line/col from start up to new position
 	z.pos = end
+	z.line = 1
+	z.col = 1
+	z.lastNewline = -1
+	for i, c := range z.buf[:z.pos] {
+		if c == '\n' {
+			z.line++
+			z.lastNewline = i
+		}
+	}
+	z.col = utf8.RuneCount(z.buf[z.lastNewline+1:z.pos]) + 1
 }
 
 // MoveRune advances the position by the length of the current rune.
@@ -165,7 +183,24 @@ func (z *Input) Pos() int {
 
 // Rewind rewinds the position to the given position.
 func (z *Input) Rewind(pos int) {
-	z.pos = z.start + pos
+	newPos := z.start + pos
+	if newPos < 0 {
+		newPos = 0
+	} else if newPos > len(z.buf)-1 {
+		newPos = len(z.buf) - 1
+	}
+	// Recompute line/col based on the new position
+	z.pos = newPos
+	z.line = 1
+	z.col = 1
+	z.lastNewline = -1
+	for i, c := range z.buf[:z.pos] {
+		if c == '\n' {
+			z.line++
+			z.lastNewline = i
+		}
+	}
+	z.col = utf8.RuneCount(z.buf[z.lastNewline+1:z.pos]) + 1
 }
 
 // Lexeme returns the bytes of the current selection.
