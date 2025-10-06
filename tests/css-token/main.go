@@ -4,7 +4,7 @@
 package fuzz
 
 import (
-	"github.com/mhaddon/tdewolff-parse/v2/css"
+	"github.com/politepixels/tdewolff-parse/v2/css"
 )
 
 // Fuzz is a fuzz test.

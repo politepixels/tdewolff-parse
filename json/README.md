@@ -1,15 +1,15 @@
-# JSON [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/mhaddon/tdewolff-parse/v2/json?tab=doc)
+# JSON [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/politepixels/tdewolff-parse/v2/json?tab=doc)
 
 This package is a JSON lexer (ECMA-404) written in [Go][1]. It follows the specification at [JSON](http://json.org/). The lexer takes an io.Reader and converts it into tokens until the EOF.
 
 ## Installation
 Run the following command
 
-	go get -u github.com/mhaddon/tdewolff-parse/v2/json
+	go get -u github.com/politepixels/tdewolff-parse/v2/json
 
 or add the following import and run project with `go get`
 
-	import "github.com/mhaddon/tdewolff-parse/v2/json"
+	import "github.com/politepixels/tdewolff-parse/v2/json"
 
 ## Parser
 ### Usage
@@ -51,7 +51,7 @@ package main
 import (
 	"os"
 
-	"github.com/mhaddon/tdewolff-parse/v2/json"
+	"github.com/politepixels/tdewolff-parse/v2/json"
 )
 
 // Tokenize JSON from stdin.
@@ -76,6 +76,6 @@ func main() {
 ```
 
 ## License
-Released under the [MIT license](https://github.com/mhaddon/tdewolff-parse/blob/master/LICENSE.md).
+Released under the [MIT license](https://github.com/politepixels/tdewolff-parse/blob/master/LICENSE.md).
 
 [1]: http://golang.org/ "Go Language"

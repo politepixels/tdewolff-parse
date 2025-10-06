@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/mhaddon/tdewolff-parse/v2"
-	"github.com/mhaddon/tdewolff-parse/v2/js"
+	"github.com/politepixels/tdewolff-parse/v2"
+	"github.com/politepixels/tdewolff-parse/v2/js"
 )
 
 // Fuzz is a fuzz test.

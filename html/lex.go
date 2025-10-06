@@ -4,7 +4,7 @@ package html
 import (
 	"strconv"
 
-	"github.com/mhaddon/tdewolff-parse/v2"
+	"github.com/politepixels/tdewolff-parse/v2"
 )
 
 // TokenType determines the type of token, eg. a number or a semicolon.

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mhaddon/tdewolff-parse/v2"
+	"github.com/politepixels/tdewolff-parse/v2"
 	"github.com/tdewolff/test"
 )
 

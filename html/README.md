@@ -1,15 +1,15 @@
-# HTML [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/mhaddon/tdewolff-parse/v2/html?tab=doc)
+# HTML [![API reference](https://img.shields.io/badge/godoc-reference-5272B4)](https://pkg.go.dev/github.com/politepixels/tdewolff-parse/v2/html?tab=doc)
 
 This package is an HTML5 lexer written in [Go][1]. It follows the specification at [The HTML syntax](http://www.w3.org/TR/html5/syntax.html). The lexer takes an io.Reader and converts it into tokens until the EOF.
 
 ## Installation
 Run the following command
 
-	go get -u github.com/mhaddon/tdewolff-parse/v2/html
+	go get -u github.com/politepixels/tdewolff-parse/v2/html
 
 or add the following import and run project with `go get`
 
-	import "github.com/mhaddon/tdewolff-parse/v2/html"
+	import "github.com/politepixels/tdewolff-parse/v2/html"
 
 ## Lexer
 ### Usage
@@ -60,7 +60,7 @@ package main
 import (
 	"os"
 
-	"github.com/mhaddon/tdewolff-parse/v2/html"
+	"github.com/politepixels/tdewolff-parse/v2/html"
 )
 
 // Tokenize HTML from stdin.
@@ -93,6 +93,6 @@ func main() {
 ```
 
 ## License
-Released under the [MIT license](https://github.com/mhaddon/tdewolff-parse/blob/master/LICENSE.md).
+Released under the [MIT license](https://github.com/politepixels/tdewolff-parse/blob/master/LICENSE.md).
 
 [1]: http://golang.org/ "Go Language"

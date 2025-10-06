@@ -1,4 +1,4 @@
-module github.com/mhaddon/tdewolff-parse/v2
+module github.com/politepixels/tdewolff-parse/v2
 
 go 1.11
 
